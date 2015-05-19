@@ -2,11 +2,22 @@ if (!_FRN_) var _FRN_={};
 $(document).ready(function() {
 
 _FRN_.init=function(){
-	_FRN_.columns = [{
+    _FRN_.columns = [{
 		name: "name",
+        label: "Name",
 		editable: false,
 		cell: "string"
-	}];
+    },{
+        name: "address",
+        label: "Address",
+        editable: false,
+        cell: "string"
+    },{
+        name: "phone",
+        label: "Telephone",
+        editable: false,
+        cell: "string"
+    }];
 
 	_FRN_.lastFocusMarker=null;
 	var input = document.getElementById('address');
@@ -23,10 +34,13 @@ _FRN_.init=function(){
 
 
 	$('body').on('click','.backgrid > tbody > tr',function(event){
-		// alert(this.cells[0].innerHTML);
-		var marker=_FRN_.markers[this.cells[0].innerHTML];
-		google.maps.event.trigger(marker,'click');
+        $(this).addClass('active');
+        $(this).siblings().removeClass('active');
+
+        var marker=_FRN_.markers[this.cells[0].firstChild.nodeValue];
+        google.maps.event.trigger(marker,'click');
 	});
+
 	$('#sort').change(function() {
 		console.log('select changing...');
 		if($('#sort').val()=='google.maps.places.RankBy.PROMINENCE'){
@@ -46,7 +60,7 @@ _FRN_.searchPlaces=function(){
 	}
 	_FRN_.restoCol= new _FRN_.RestoCol();
 
-	var placeLoc=new google.maps.LatLng(_FRN_.place.geometry.location.k,_FRN_.place.geometry.location.D);
+	var placeLoc=new google.maps.LatLng(_FRN_.place.geometry.location.A,_FRN_.place.geometry.location.F);
 	var mapOptions = {
 		center: placeLoc,
 		zoom: 13
@@ -63,7 +77,7 @@ _FRN_.searchPlaces=function(){
 
 	var request = {
 		location:placeLoc,
-		types: ['restaurant'],
+		types: ['restaurant']
 	};
 	if($('#sort').val()=='google.maps.places.RankBy.PROMINENCE'){
 		request['radius']=$('#radius').val();
@@ -73,8 +87,8 @@ _FRN_.searchPlaces=function(){
 	}
 
 	_FRN_.infowindow = new google.maps.InfoWindow();
-	var service = new google.maps.places.PlacesService(_FRN_.map);
-	service.nearbySearch(request, _FRN_.searchPlacesCB);
+    _FRN_.service = new google.maps.places.PlacesService(_FRN_.map);
+    _FRN_.service.nearbySearch(request, _FRN_.searchPlacesCB);
 
 	console.log(request);
 	console.log('searching done.');
@@ -83,8 +97,21 @@ _FRN_.searchPlaces=function(){
 _FRN_.searchPlacesCB=function(results, status,pagination) {
 	if (status == google.maps.places.PlacesServiceStatus.OK) {
 		for (var i = 0; i < results.length; i++) {
-			// console.log(results[i]);
-			_FRN_.restoCol.add(new _FRN_.Resto({name:results[i].name,place_id:results[i].place_id,lat:results[i].geometry.location.k, lng:results[i].geometry.location.D}));
+
+            _FRN_.service.getDetails({ placeId: results[i].place_id }, function(details, status) {
+                if (status == google.maps.places.PlacesServiceStatus.OK) {
+                    var resto={
+                        name:details.name,
+                        address:details.vicinity,
+                        phone:details.formatted_phone_number,
+
+                        lat:details.geometry.location.A,
+                        lng:details.geometry.location.F
+                    };
+
+                    _FRN_.restoCol.add(new _FRN_.Resto(resto));
+                }
+            });
 		}
 
 		if (pagination.hasNextPage) {
@@ -95,11 +122,11 @@ _FRN_.searchPlacesCB=function(results, status,pagination) {
 
 			_FRN_.grid = new Backgrid.Grid({
 				columns: _FRN_.columns,
-				collection: _FRN_.restoCol,
+				collection: _FRN_.restoCol
 			});
 
 			_FRN_.paginator = new Backgrid.Extension.Paginator({
-				collection: _FRN_.restoCol,
+				collection: _FRN_.restoCol
 			});
 
 			$("#grid").html(_FRN_.grid.render().$el);
@@ -121,7 +148,7 @@ _FRN_.hideAllMarkers=function() {
 };
 
 _FRN_.createMarkers=function(restoCol){
-	// var bounds = new google.maps.LatLngBounds();
+	var bounds = new google.maps.LatLngBounds();
 
 	restoCol.each(function(resto, i) {
 		var marker = new google.maps.Marker({
@@ -130,44 +157,39 @@ _FRN_.createMarkers=function(restoCol){
 			icon: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
 			position: resto.LatLng()
 		});
-		// _FRN_.markers[resto.get('place_id')]=marker;
 		_FRN_.markers[resto.get('name')]=marker;
 
-		// var pinColor = "FFFF57";
-		// var pinImage = new google.maps.MarkerImage("http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|" + pinColor,
-		// new google.maps.Size(21, 34),
-		// new google.maps.Point(0,0),
-		// new google.maps.Point(10, 34));
 
 		google.maps.event.addListener(marker, 'click', function() {
 			if(_FRN_.lastFocusMarker!=null){
 				_FRN_.lastFocusMarker.setIcon('http://maps.google.com/mapfiles/ms/icons/red-dot.png');
 			}
-			// _FRN_.focusMarker=new google.maps.Marker({
-			// 	map: _FRN_.map,
-			// 	title: resto.get('name'),
-			// 	icon:'http://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-			// 	position: resto.LatLng()
-			// });
 			marker.setIcon('http://maps.google.com/mapfiles/ms/icons/yellow-dot.png');
 			_FRN_.lastFocusMarker=marker;
 
 			_FRN_.infowindow.setContent(resto.get('name'));
 			_FRN_.infowindow.open(_FRN_.map, this);
-		});
-		// placesList.innerHTML += '<li>' + place.name + '</li>';
 
-		// bounds.extend(resto.LatLng());
+            var $theTd=$('.backgrid td').filter(function(){
+                return $(this).text() === marker.title;
+            }).parent();
+            if($theTd.length > 0&&$theTd.hasClass('active')==false){
+                $theTd.trigger( "click" );
+            }
+		});
+
+		bounds.extend(resto.LatLng());
 	});
 
-	// _FRN_.map.fitBounds(bounds);
+	_FRN_.map.fitBounds(bounds);
 };
 
 
 _FRN_.Resto=Backbone.Model.extend({
 	defaults: {
 		name:'',
-		place_id:'',
+        address:'',
+        phone:'',
 		lat:0,
 		lng:0
 	},
@@ -191,7 +213,7 @@ _FRN_.RestoCol =Backbone.PageableCollection.extend({
     onReset:function(){
     	_FRN_.hideAllMarkers();
 		_FRN_.createMarkers(_FRN_.restoCol);
-    },
+    }
 
 });
 
