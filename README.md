@@ -26,3 +26,5 @@ The marker will be displayed in yellow when the corresponding restaurant is clic
 Responsiveness is provided by bootstrap grid system.
 
 Pagination is supported. 
+
+![the screenshot](screenshot.png)
