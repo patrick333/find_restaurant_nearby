@@ -1,6 +1,3 @@
-
-# Find the nearest restaurants
-
 # Basic features
 Feature 1: 
 The user can input a location through autocompletion of google maps. 
