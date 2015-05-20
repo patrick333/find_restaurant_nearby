@@ -27,6 +27,6 @@ Responsiveness is provided by bootstrap grid system.
 
 Pagination is supported. 
 
-The screenshot is shown below:
+# The screenshot
 
 ![the screenshot](screenshot.png)
